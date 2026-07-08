@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="收納清單">
+<meta name="mobile-web-app-capable" content="yes">
+<title>收納清單</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#22261F; --bg-soft:#2B302A; --tag:#EFE7D3; --tag-dim:#E4DAC0;
+    --ink:#211D16; --ink-soft:#5B5748; --stamp:#A33B2E; --stamp-soft:#C9584A;
+    --teal:#3E6259; --thread:#C9A227;
+    --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--tag);font-family:'IBM Plex Sans',sans-serif;height:100%;}
+  body{display:flex;flex-direction:column;min-height:100vh;}
+  h1,h2,h3{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:0.03em;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  #app{flex:1;display:flex;flex-direction:column;max-width:520px;width:100%;margin:0 auto;position:relative;}
+  header.topbar{
+    padding:calc(14px + var(--safe-top)) 18px 14px;display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid rgba(239,231,211,0.1);
+  }
+  header.topbar h1{font-size:19px;}
+  .icon-btn{background:none;border:none;color:var(--tag);width:38px;height:38px;border-radius:50%;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .icon-btn:active{background:rgba(239,231,211,0.12);}
+  main{flex:1;padding:16px 16px calc(110px + var(--safe-bottom));}
+  .fade-in{animation:fadeIn .2s ease both;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  @media (prefers-reduced-motion: reduce){.fade-in{animation:none;}}
+
+  .search-bar{display:flex;align-items:center;gap:8px;background:var(--bg-soft);border-radius:10px;padding:10px 14px;border:1px solid rgba(239,231,211,0.15);margin-bottom:14px;}
+  .search-bar input{background:none;border:none;padding:0;color:var(--tag);font-size:15px;flex:1;outline:none;}
+
+  .home-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .home-tab{flex:1;padding:10px;text-align:center;border-radius:10px;background:var(--bg-soft);color:rgba(239,231,211,0.6);font-size:14px;font-weight:600;border:1px solid rgba(239,231,211,0.12);cursor:pointer;}
+  .home-tab.active{background:var(--tag);color:var(--ink);}
+
+  .box-card{background:var(--bg-soft);border:1px solid rgba(239,231,211,0.15);border-radius:12px;padding:14px;margin-bottom:12px;cursor:pointer;}
+  .box-card:active{transform:scale(0.99);}
+  .box-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .box-title{font-size:17px;font-weight:600;color:var(--tag);display:flex;align-items:center;gap:6px;}
+  .box-count{font-size:12px;background:rgba(239,231,211,0.15);color:var(--tag-dim);padding:2px 8px;border-radius:12px;}
+  .box-desc{font-size:13px;color:rgba(239,231,211,0.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  .item-row{display:flex;gap:12px;align-items:center;background:var(--tag);color:var(--ink);padding:10px 12px;border-radius:10px;cursor:pointer;margin-bottom:10px;}
+  .item-row:active{transform:scale(0.99);}
+  .thumb{width:52px;height:52px;border-radius:8px;object-fit:cover;background:var(--bg-soft);flex-shrink:0;border:1px solid rgba(33,29,22,0.15);}
+  .thumb-placeholder{display:flex;align-items:center;justify-content:center;font-size:20px;background:#3a4037;width:52px;height:52px;border-radius:8px;}
+  .item-row .info{flex:1;min-width:0;}
+  .item-row .name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .item-row .sub{font-size:12.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chip{font-size:11px;padding:3px 9px;border-radius:20px;background:var(--teal);color:#F1ECE0;font-weight:500;white-space:nowrap;}
+
+  .section-title{font-size:14px;color:rgba(239,231,211,0.5);margin:16px 0 10px;font-weight:500;letter-spacing:0.05em;}
+
+  .fab{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + var(--safe-bottom));
+    max-width:520px;width:calc(100% - 32px);background:var(--stamp);color:#F5EFE2;border:none;border-radius:50px;
+    padding:15px 20px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.35);cursor:pointer;z-index:20;
+  }
+  .fab:active{transform:translateX(-50%) scale(0.97);}
+
+  .empty-state{text-align:center;padding:48px 20px;color:rgba(239,231,211,0.55);}
+  .empty-state .icon{font-size:34px;margin-bottom:10px;}
+  .empty-state p{font-size:14px;line-height:1.6;margin:0;}
+
+  label.field-label{display:block;font-size:12.5px;color:rgba(239,231,211,0.65);margin:18px 0 6px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;}
+  input[type=text],textarea{width:100%;background:var(--bg-soft);border:1px solid rgba(239,231,211,0.18);color:var(--tag);padding:12px 14px;border-radius:10px;font-size:15px;outline:none;}
+  input[type=text]:focus,textarea:focus{border-color:var(--thread);}
+  textarea{resize:vertical;min-height:70px;}
+
+  .btn{width:100%;padding:14px;border-radius:10px;border:none;font-size:15px;font-weight:600;cursor:pointer;margin-top:22px;}
+  .btn-primary{background:var(--stamp);color:#F5EFE2;}
+  .btn-secondary{background:transparent;border:1px solid rgba(239,231,211,0.3);color:var(--tag);}
+  .btn-danger{background:transparent;border:1px solid rgba(163,59,46,0.6);color:var(--stamp-soft);}
+  .btn:disabled{opacity:0.5;}
+
+  .pick-row{display:flex;gap:8px;}
+  .pick-chip{padding:10px 16px;border-radius:20px;border:1px solid rgba(239,231,211,0.25);background:transparent;color:var(--tag);font-size:14px;cursor:pointer;flex:1;text-align:center;}
+  .pick-chip.active{background:var(--teal);border-color:var(--teal);color:#F1ECE0;}
+
+  .photo-box{margin-top:8px;width:140px;height:140px;border-radius:12px;border:1.5px dashed rgba(239,231,211,0.35);display:flex;align-items:center;justify-content:center;color:rgba(239,231,211,0.55);font-size:26px;position:relative;overflow:hidden;cursor:pointer;background:var(--bg-soft);}
+  .photo-box img{width:100%;height:100%;object-fit:cover;}
+  .photo-box .remove{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.55);color:#fff;border:none;font-size:13px;}
+
+  .detail-photo{width:100%;border-radius:12px;object-fit:cover;max-height:360px;background:var(--bg-soft);}
+  .detail-block{margin-top:18px;}
+  .detail-block .label{font-size:11.5px;color:rgba(239,231,211,0.5);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+  .detail-block .value{font-size:15px;line-height:1.6;white-space:pre-wrap;}
+
+  .loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:rgba(239,231,211,0.5);gap:10px;}
+  .spinner{width:26px;height:26px;border-radius:50%;border:3px solid rgba(239,231,211,0.2);border-top-color:var(--thread);animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-bottom));transform:translateX(-50%);background:var(--tag);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:13.5px;box-shadow:0 6px 18px rgba(0,0,0,0.3);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyvRnC2YDkpNLIHI7dpR5Yidx059sqQY1x9ZWKMuExrOoa1BHPhEfkIdzbOn3xkKTmZ/exec';
+const HOMES = ['家A','家B'];
+
+let state = {
+  items: [],
+  home: HOMES[0],
+  query: '',
+  loaded: false
+};
+
+function toastMsg(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function escapeHtml(str){
+  if(str==null) return '';
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+async function apiList(){
+  const res = await fetch(SCRIPT_URL + '?action=list');
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error||'讀取失敗');
+  return data.items;
+}
+async function apiAdd(payload){
+  const res = await fetch(SCRIPT_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({action:'add'}, payload))
+  });
+  return await res.json();
+}
+async function apiUpdate(payload){
+  const res = await fetch(SCRIPT_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({action:'update'}, payload))
+  });
+  return await res.json();
+}
+async function apiDelete(id){
+  const res = await fetch(SCRIPT_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'delete', id})
+  });
+  return await res.json();
+}
+
+function fileToCompressedDataUrl(file, maxDim, targetKB){
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let w=img.width,h=img.height;
+      if(w>h && w>maxDim){ h=Math.round(h*maxDim/w); w=maxDim; }
+      else if(h>=w && h>maxDim){ w=Math.round(w*maxDim/h); h=maxDim; }
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+      let quality=0.82, dataUrl=canvas.toDataURL('image/jpeg',quality);
+      const targetBytes=targetKB*1024; let tries=0;
+      while(dataUrl.length*0.75>targetBytes && quality>0.35 && tries<8){
+        quality-=0.1; dataUrl=canvas.toDataURL('image/jpeg',quality); tries++;
+      }
+      resolve(dataUrl);
+    };
+    img.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function triggerPhotoPick(callback){
+  const input=document.createElement('input');
+  input.type='file'; input.accept='image/*';
+  // 不設定 capture 屬性,讓瀏覽器顯示完整選單(拍照／相簿／檔案),而不是直接強制開相機
+  input.onchange=()=>{ if(input.files&&input.files[0]) callback(input.files[0]); };
+  input.click();
+}
+
+window.addEventListener('hashchange', render);
+window.addEventListener('DOMContentLoaded', init);
+
+async function init(){
+  const app=document.getElementById('app');
+  app.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><div>正在載入資料…</div></div>`;
+  try{
+    state.items = await apiList();
+    state.loaded = true;
+  }catch(err){
+    app.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>連線失敗:${escapeHtml(err.message)}<br>請確認後端設定。</p></div>`;
+    return;
+  }
+  if(!location.hash) location.hash='#/';
+  render();
+}
+
+async function reload(){
+  state.items = await apiList();
+}
+
+function parseHash(){
+  return location.hash.replace('#/','').split('/').filter(Boolean);
+}
+
+function render(){
+  if(!state.loaded) return;
+  const app=document.getElementById('app');
+  const parts=parseHash();
+  if(parts[0]==='new') return renderForm(app, null, parts[1] ? decodeURIComponent(parts[1]) : null);
+  if(parts[0]==='item' && parts[1]==='edit') return renderForm(app, parts[2]);
+  if(parts[0]==='item' && parts[1]) return renderDetail(app, parts[1]);
+  if(parts[0]==='box' && parts[1]) return renderBoxDetail(app, decodeURIComponent(parts[1]));
+  return renderList(app);
+}
+
+function topbar({title, back, right, backClick}){
+  return `<header class="topbar">
+    <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+      ${back?`<button class="icon-btn" onclick="${backClick ? backClick : 'history.back()'}">←</button>`:''}
+      <h1 style="font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</h1>
+    </div>
+    <div style="display:flex;gap:4px;">${right||''}</div>
+  </header>`;
+}
+
+/* ============ 首頁:紙箱大類 + 全域搜尋 ============
+   重點修正:輸入搜尋文字時，只重新畫 #main-content 這個區塊，
+   完全不去動搜尋框本身，這樣輸入焦點、注音選字都不會被打斷。 */
+function renderList(app){
+  app.innerHTML = `
+    ${topbar({title:'收納清單', right:`<button class="icon-btn" id="refreshBtn">⟳</button>`})}
+    <main class="fade-in">
+      <div class="home-tabs">
+        ${HOMES.map(h=>`<div class="home-tab ${h===state.home?'active':''}" data-home="${escapeHtml(h)}">${escapeHtml(h)}</div>`).join('')}
+      </div>
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="搜尋物品、編號、備註..." value="${escapeHtml(state.query)}">
+      </div>
+      <div id="main-content"></div>
+    </main>
+    <button class="fab" onclick="location.hash='#/new'">＋ 新增物品</button>
+  `;
+
+  document.querySelectorAll('.home-tab').forEach(el=>{
+    el.onclick = ()=>{
+      state.home = el.dataset.home;
+      state.query = '';
+      render(); // 切換家的時候整頁重畫沒關係，不影響輸入焦點
+    };
+  });
+
+  const inputEl = document.getElementById('searchInput');
+  let isComposing = false;
+  inputEl.addEventListener('compositionstart', ()=>{ isComposing = true; });
+  inputEl.addEventListener('compositionend', (e)=>{
+    isComposing = false;
+    state.query = e.target.value;
+    renderMainContent();
+  });
+  inputEl.addEventListener('input', (e)=>{
+    if(isComposing) return; // 注音／中文輸入選字中，先不要更新，避免打斷選字
+    state.query = e.target.value;
+    renderMainContent(); // 只更新清單區塊，不重建輸入框，游標與焦點都不會跑掉
+  });
+
+  document.getElementById('refreshBtn').onclick = async ()=>{
+    toastMsg('重新整理中…');
+    try{ await reload(); renderMainContent(); toastMsg('已更新'); }
+    catch(err){ toastMsg('讀取失敗'); }
+  };
+
+  renderMainContent();
+}
+
+function renderMainContent(){
+  const mainContent = document.getElementById('main-content');
+  if(!mainContent) return;
+
+  const currentHomeItems = state.items.filter(it => it.Home === state.home);
+  const isSearching = state.query.trim().length > 0;
+
+  if(isSearching){
+    const q = state.query.toLowerCase();
+    const filteredItems = currentHomeItems.filter(it =>
+      (it.ItemName||'').toLowerCase().includes(q) ||
+      (it.BoxCode||'').toLowerCase().includes(q) ||
+      (it.ItemNote||'').toLowerCase().includes(q) ||
+      (it.BoxNote||'').toLowerCase().includes(q)
+    );
+    mainContent.innerHTML = `
+      <div class="section-title">全域搜尋結果 (${filteredItems.length})</div>
+      ${filteredItems.length===0 ? `
+        <div class="empty-state"><div class="icon">🔍</div><p>找不到符合的物品</p></div>
+      ` : `<div id="search-list"></div>`}
+    `;
+    if(filteredItems.length>0){
+      const listEl = document.getElementById('search-list');
+      filteredItems.forEach(it=>{
+        const row=document.createElement('div');
+        row.className='item-row';
+        row.onclick=()=>{ location.hash='#/item/'+it.ID; };
+        row.innerHTML = `
+          ${it.PhotoUrl? `<img class="thumb" src="${it.PhotoUrl}">` : `<div class="thumb thumb-placeholder">📦</div>`}
+          <div class="info">
+            <div class="name">${escapeHtml(it.ItemName)}</div>
+            <div class="sub">位置：${escapeHtml(it.BoxCode || '未分類')} ${it.ItemNote ? ' · ' + escapeHtml(it.ItemNote) : ''}</div>
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+    return;
+  }
+
+  const boxMap = {};
+  currentHomeItems.forEach(it=>{
+    const code = it.BoxCode || '未分類箱子';
+    if(!boxMap[code]) boxMap[code] = { code, note: it.BoxNote || '無箱子說明', items: [] };
+    boxMap[code].items.push(it);
+  });
+  const boxes = Object.values(boxMap).sort((a,b)=> a.code.localeCompare(b.code));
+
+  mainContent.innerHTML = `
+    <div class="section-title">所有紙箱大類 (${boxes.length})</div>
+    ${boxes.length===0 ? `
+      <div class="empty-state"><div class="icon">📦</div><p>這個家還沒有建立任何紙箱</p></div>
+    ` : `<div id="box-grid"></div>`}
+  `;
+  if(boxes.length>0){
+    const gridEl = document.getElementById('box-grid');
+    boxes.forEach(box=>{
+      const card=document.createElement('div');
+      card.className='box-card';
+      card.onclick=()=>{ location.hash='#/box/'+encodeURIComponent(box.code); };
+      card.innerHTML = `
+        <div class="box-header">
+          <div class="box-title">📦 ${escapeHtml(box.code)}</div>
+          <div class="box-count">${box.items.length} 件物品</div>
+        </div>
+        <div class="box-desc">${escapeHtml(box.note)}</div>
+      `;
+      gridEl.appendChild(card);
+    });
+  }
+}
+
+/* ============ 第二層:紙箱內的物品清單 ============ */
+function renderBoxDetail(app, boxCode){
+  const boxItems = state.items.filter(it => it.Home===state.home && (it.BoxCode||'未分類箱子')===boxCode);
+  const boxNote = boxItems.length>0 ? (boxItems[0].BoxNote || '無箱子說明') : '無箱子說明';
+
+  app.innerHTML = `
+    ${topbar({title:boxCode, back:true, backClick:"location.hash='#/'"})}
+    <main class="fade-in">
+      <div style="background:var(--bg-soft); padding:12px; border-radius:10px; margin-bottom:16px; border:1px solid rgba(239,231,211,0.1)">
+        <div style="font-size:12px; color:rgba(239,231,211,0.5)">箱子說明</div>
+        <div style="font-size:15px; color:var(--tag); margin-top:2px;">${escapeHtml(boxNote)}</div>
+      </div>
+      <label class="field-label" style="margin-top:0;">在這個箱子裡搜尋</label>
+      <div class="search-bar" style="margin-bottom:16px;">
+        <span>🔍</span>
+        <input type="text" id="boxSearchInput" placeholder="搜尋物品名稱或備註...">
+      </div>
+      <div class="section-title">箱內物品 (<span id="boxItemCount">${boxItems.length}</span>)</div>
+      <div id="box-item-list"></div>
+    </main>
+    <button class="fab" onclick="location.hash='#/new/${encodeURIComponent(boxCode)}'">＋ 在這個箱子新增物品</button>
+  `;
+
+  function renderBoxItemList(query){
+    const q = (query||'').trim().toLowerCase();
+    const filtered = q ? boxItems.filter(it=>
+      (it.ItemName||'').toLowerCase().includes(q) || (it.ItemNote||'').toLowerCase().includes(q)
+    ) : boxItems;
+
+    document.getElementById('boxItemCount').textContent = filtered.length;
+    const listEl = document.getElementById('box-item-list');
+    if(filtered.length===0){
+      listEl.innerHTML = `<div class="empty-state"><div class="icon">🫙</div><p>${q?'找不到符合的物品':'此箱子內目前沒有物品'}</p></div>`;
+      return;
+    }
+    listEl.innerHTML = '';
+    filtered.forEach(it=>{
+      const row=document.createElement('div');
+      row.className='item-row';
+      row.onclick=()=>{ location.hash='#/item/'+it.ID; };
+      row.innerHTML = `
+        ${it.PhotoUrl? `<img class="thumb" src="${it.PhotoUrl}">` : `<div class="thumb thumb-placeholder">📦</div>`}
+        <div class="info">
+          <div class="name">${escapeHtml(it.ItemName)}</div>
+          <div class="sub">${it.ItemNote ? escapeHtml(it.ItemNote) : '點擊查看詳情'}</div>
+        </div>
+      `;
+      listEl.appendChild(row);
+    });
+  }
+
+  renderBoxItemList('');
+
+  const boxSearchInput = document.getElementById('boxSearchInput');
+  let isComposing = false;
+  boxSearchInput.addEventListener('compositionstart', ()=>{ isComposing = true; });
+  boxSearchInput.addEventListener('compositionend', (e)=>{ isComposing = false; renderBoxItemList(e.target.value); });
+  boxSearchInput.addEventListener('input', (e)=>{ if(!isComposing) renderBoxItemList(e.target.value); });
+}
+
+/* ============ 物品詳細頁 ============ */
+function renderDetail(app, id){
+  const item = state.items.find(i=>i.ID===id);
+  if(!item){ location.hash='#/'; return; }
+  app.innerHTML = `
+    ${topbar({title:escapeHtml(item.ItemName), back:true, right:`<button class="icon-btn" onclick="location.hash='#/item/edit/${item.ID}'">✏️</button>`})}
+    <main class="fade-in">
+      ${item.PhotoUrl? `<img class="detail-photo" src="${item.PhotoUrl}">` : `
+        <div class="empty-state" style="padding:36px 0;"><div class="icon">🖼️</div><p>還沒有照片</p></div>
+      `}
+      <div class="detail-block">
+        <div class="label">所屬位置與紙箱</div>
+        <div class="value">${escapeHtml(item.Home)} · <span class="mono">${escapeHtml(item.BoxCode||'未分類')}</span>${item.BoxNote? '（'+escapeHtml(item.BoxNote)+'）':''}</div>
+      </div>
+      ${item.ItemNote? `<div class="detail-block"><div class="label">物品備註</div><div class="value">${escapeHtml(item.ItemNote)}</div></div>`:''}
+      <div class="detail-block"><span class="chip">建立時間：${formatDate(item.CreatedAt)}</span></div>
+    </main>
+  `;
+}
+
+function formatDate(ts){
+  if(!ts) return '';
+  const d=new Date(ts);
+  if(isNaN(d)) return '';
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ============ 新增／編輯表單 ============ */
+async function renderForm(app, id, presetBoxCode){
+  const isEdit = !!id;
+  const item = isEdit ? state.items.find(i=>i.ID===id) : null;
+  if(isEdit && !item){ location.hash='#/'; return; }
+
+  let presetBoxNote = '';
+  if(!isEdit && presetBoxCode){
+    const existing = state.items.find(it => (it.BoxCode||'未分類箱子')===presetBoxCode);
+    if(existing) presetBoxNote = existing.BoxNote || '';
+  }
+
+  let photoDataUrl = null;
+  let existingPhotoUrl = isEdit ? (item.PhotoUrl||'') : '';
+  let selectedHome = isEdit ? item.Home : state.home;
+
+  app.innerHTML = `
+    ${topbar({title:isEdit?'編輯物品':'新增物品', back:true})}
+    <main class="fade-in">
+      <label class="field-label">家（儲存區域）</label>
+      <div class="pick-row" id="homeRow"></div>
+
+      <label class="field-label">紙箱編號</label>
+      <input type="text" id="f-box" placeholder="例如：紙箱A、A-01" value="${escapeHtml(isEdit ? (item.BoxCode||'') : (presetBoxCode||''))}">
+
+      <label class="field-label">紙箱說明（選填）</label>
+      <input type="text" id="f-boxnote" placeholder="例如：客廳冬衣、廚房雜物" value="${escapeHtml(isEdit ? (item.BoxNote||'') : presetBoxNote)}">
+
+      <label class="field-label">物品名稱</label>
+      <input type="text" id="f-name" placeholder="例如：黑色羽絨大衣" value="${escapeHtml(isEdit?item.ItemName||'':'')}">
+
+      <label class="field-label">物品備註（選填）</label>
+      <textarea id="f-note" placeholder="例如：型號、品牌、內部細節描述">${escapeHtml(isEdit?item.ItemNote||'':'')}</textarea>
+
+      <label class="field-label">上傳照片（選填）</label>
+      <div class="photo-box" id="photoBox">📷</div>
+
+      <button class="btn btn-primary" id="saveBtn">${isEdit?'儲存變更':'確認新增'}</button>
+      ${isEdit? `<button class="btn btn-danger" id="delBtn">刪除此物品</button>`:''}
+    </main>
+  `;
+
+  const homeRow = document.getElementById('homeRow');
+  function renderHomeRow(){
+    homeRow.innerHTML='';
+    HOMES.forEach(h=>{
+      const chip=document.createElement('button');
+      chip.className='pick-chip'+(selectedHome===h?' active':'');
+      chip.textContent=h;
+      chip.onclick=()=>{ selectedHome=h; renderHomeRow(); };
+      homeRow.appendChild(chip);
+    });
+  }
+  renderHomeRow();
+
+  const photoBox = document.getElementById('photoBox');
+  function renderPhotoBox(){
+    const src = photoDataUrl || existingPhotoUrl;
+    if(src){
+      photoBox.innerHTML = `<img src="${src}"><button class="remove">✕</button>`;
+      photoBox.querySelector('.remove').onclick = (e)=>{ e.stopPropagation(); photoDataUrl=null; existingPhotoUrl=''; renderPhotoBox(); };
+      photoBox.onclick = null;
+    } else {
+      photoBox.innerHTML = '📷';
+      photoBox.onclick = ()=>triggerPhotoPick(async file=>{
+        toastMsg('處理照片中…');
+        photoDataUrl = await fileToCompressedDataUrl(file, 1600, 800);
+        renderPhotoBox();
+      });
+    }
+  }
+  renderPhotoBox();
+
+  document.getElementById('saveBtn').onclick = async ()=>{
+    const boxCode = document.getElementById('f-box').value.trim();
+    const boxNote = document.getElementById('f-boxnote').value.trim();
+    const itemName = document.getElementById('f-name').value.trim();
+    const itemNote = document.getElementById('f-note').value.trim();
+    if(!itemName){ toastMsg('請填寫物品名稱'); return; }
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = '儲存中…';
+    try{
+      const payload = { home:selectedHome, boxCode, boxNote, itemName, itemNote };
+      if(photoDataUrl) payload.photoBase64 = photoDataUrl;
+      if(isEdit){
+        payload.id = item.ID;
+        if(!photoDataUrl) payload.photoUrl = existingPhotoUrl;
+        await apiUpdate(payload);
+      } else {
+        await apiAdd(payload);
+      }
+      await reload();
+      toastMsg('已儲存');
+      state.home = selectedHome;
+      location.hash = '#/box/' + encodeURIComponent(boxCode || '未分類箱子');
+    }catch(err){
+      toastMsg('儲存失敗:'+err.message);
+      btn.disabled=false; btn.textContent = isEdit?'儲存變更':'確認新增';
+    }
+  };
+
+  if(isEdit){
+    document.getElementById('delBtn').onclick = async ()=>{
+      if(!confirm(`確定要刪除「${item.ItemName}」嗎？`)) return;
+      try{
+        await apiDelete(item.ID);
+        await reload();
+        toastMsg('已刪除');
+        location.hash = '#/';
+      }catch(err){
+        toastMsg('刪除失敗:'+err.message);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
