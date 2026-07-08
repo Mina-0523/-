@@ -109,7 +109,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXSXWdU1_Qeo9av50v5QqxMx3Ep8FfB4jkYIkQQJ40g44ZQW0jYIHKCk6dfkMtXcYN/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzh9PJH58OR7jGiU34EJLQfPxVZQUa3qZRwawq2HzU1zcYYcaUxBUEfZlVyd73jqVuh/exec';
 const HOMES = ['家A','家B'];
 
 let state = {
@@ -186,7 +186,8 @@ function fileToCompressedDataUrl(file, maxDim, targetKB){
 
 function triggerPhotoPick(callback){
   const input=document.createElement('input');
-  input.type='file'; input.accept='image/*'; input.capture='environment';
+  input.type='file'; input.accept='image/*';
+  // 不設定 capture 屬性,讓瀏覽器顯示完整選單(拍照／相簿／檔案),而不是直接強制開相機
   input.onchange=()=>{ if(input.files&&input.files[0]) callback(input.files[0]); };
   input.click();
 }
